@@ -7069,6 +7069,12 @@ function rerender(viewKey) {
     function paintRegionMap() {
       const L = window.L;
       if (!L || !mapWrapEl.isConnected) return;
+      if (window.__regionLeafletMap__ && !window.__regionLeafletMap__.getContainer().isConnected) {
+        // Previous map's container was destroyed by a full re-render (filter change, tab switch, etc.)
+        window.__regionLeafletMap__.remove();
+        window.__regionLeafletMap__ = null;
+        window.__regionLeafletLayer__ = null;
+      }
       if (!window.__regionLeafletMap__) {
         const inner = document.createElement('div');
         inner.style.position = 'absolute';
@@ -7184,10 +7190,11 @@ function rerender(viewKey) {
     }
 
     function buildParetoAgg(kname, dimIdx) {
+      const lookup = dimIdx === R_PRODUCT ? DATA.products : DATA.sales;
       const agg = new Map();
       for (const r of filteredRows) {
         if ((DATA.kotas[r[R_KOTA]] || '') !== kname) continue;
-        const key = r[dimIdx] || '(Tidak diketahui)';
+        const key = (lookup && lookup[r[dimIdx]]) || '(Tidak diketahui)';
         agg.set(key, (agg.get(key)||0) + r[R_BRUTO]);
       }
       const arr = Array.from(agg.entries()).map(([k,v])=>({label:k, val:v})).sort((a,b)=>b.val-a.val);
